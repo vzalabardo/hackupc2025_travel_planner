@@ -21,7 +21,7 @@ sequelize.authenticate()
   });
 
 // Sincronizar los modelos (esto crea las tablas si no existen)
-sequelize.sync({ force: false })  // Set force: true para forzar la recreación de tablas (¡Usa con precaución!)
+sequelize.sync({ alter: true })  // Set force: true para forzar la recreación de tablas (¡Usa con precaución!)
   .then(() => {
     console.log('✅ Base de datos sincronizada');
   })

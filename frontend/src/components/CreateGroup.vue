@@ -83,7 +83,7 @@
   
           console.log('✅ Grupo creado:', response.data);
   
-          this.$router.push({ name: 'GroupPage', params: { id: response.data.group.id } }); // Redirige a la página del grupo (crea esta vista después)
+          this.$router.push({ name: 'Home'}); // Redirige a la página del grupo (crea esta vista después)
         } catch (error) {
           console.error('❌ Error al crear el grupo:', error);
           alert('Error al crear el grupo: ' + (error.response?.data?.message || error.message));

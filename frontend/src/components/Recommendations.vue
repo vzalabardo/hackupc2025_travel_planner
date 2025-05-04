@@ -18,9 +18,8 @@
 
         <!-- Posición del destino dentro de un círculo -->
         <div class="rank-circle" :class="{ 'first-place': index === 0 }">
-          <!-- Mostrar la corona en lugar del número en la primera posición -->
           <span v-if="index === 0" class="crown">👑</span>
-          <span v-else>{{ index + 1 }}</span> <!-- Número de ranking para otras posiciones -->
+          <span v-else>{{ index + 1 }}</span>
         </div>
 
         <h2 class="destination-name">{{ recommendation.destination }}</h2>
@@ -33,7 +32,6 @@
             <p><strong>{{ priceDetail.origin }}:</strong> {{ priceDetail.price }}</p>
           </div>
 
-          <!-- Botón de compra para ir a SkyScanner -->
           <a :href="`https://www.skyscanner.net/transport/flights/${recommendation.origin}/${recommendation.destination}/?adults=1`" 
              target="_blank" 
              class="buy-button">
@@ -58,15 +56,24 @@
           </div>
         </div>
 
-        <!-- Votación -->
+        <!-- Mostrar votos de los usuarios -->
+        <div class="votes-section">
+          <p><strong>Votos de los usuarios:</strong></p>
+          <ul>
+            <li v-for="(vote, idx) in recommendation.votes" :key="idx">
+              <strong>{{ vote.username }}:</strong> {{ vote.rating }}
+            </li>
+          </ul>
+        </div>
+
+        <!-- Mostrar puntuación promedio -->
         <div class="vote-section">
-          <p><strong>¿Te gusta este destino?</strong></p>
+          <p><strong>Calificación promedio:</strong> {{ recommendation.averageRating }} ({{ recommendation.votesCount }} votos)</p>
           <div class="rating">
             <button v-for="n in 10" :key="n" @click="voteDestination(recommendation, n)" class="rating-button">
               {{ n }}
             </button>
           </div>
-          <p>Calificación: {{ recommendation.rating || 'No calificado' }}</p>
         </div>
       </div>
     </div>
@@ -108,16 +115,20 @@ export default {
   methods: {
     async fetchRecommendations() {
       try {
-        const response = await axios.get(`http://localhost:3000/api/groups/recommendations`, {
-          params: { groupId: this.groupId },
+        console.log(this.groupId);
+        const response = await axios.get('http://localhost:3000/api/groups/votes', {
+          params: {
+            groupId: this.groupId, // Pasamos el groupId en los parámetros de la URL
+          }
         });
 
-        this.recommendations = response.data;
+        this.recommendations = response.data; // Asumimos que la respuesta es una lista de recomendaciones
 
         this.recommendations.forEach(async (recommendation) => {
           if (!recommendation.image_url) {
-            const image = await this.getUnsplashImage(recommendation.destination);
-            recommendation.image_url = image;
+            // Si deseas obtener una imagen de Unsplash, descomenta y implementa esta función
+            // const image = await this.getUnsplashImage(recommendation.destination);
+            // recommendation.image_url = image;
           }
         });
       } catch (error) {
@@ -142,18 +153,45 @@ export default {
       }
     },
 
-    voteDestination(recommendation, rating) {
-      if (rating < 1 || rating > 10) return;
+    // Método para votar por un destino
+    async voteDestination(recommendation, rating) {
+      if (rating < 1 || rating > 10) return; // Asegurarse de que el rating esté entre 1 y 10
+
+      // Asignar la calificación seleccionada al destino recomendado
       recommendation.rating = rating;
+
+      // Llamar a la función que actualizará el servidor
       this.updateRatingOnServer(recommendation);
+      this.fetchRecommendations(); // Volver a cargar las recomendaciones para reflejar la nueva calificación
     },
 
+    // Método para actualizar la calificación en el servidor
     async updateRatingOnServer(recommendation) {
       try {
-        await axios.put(`http://localhost:3000/api/groups/recommendations/${recommendation.id}`, {
-          rating: recommendation.rating,
-        });
-        console.log('Calificación actualizada correctamente');
+        const token = localStorage.getItem('token');  // Obtener el token del localStorage
+
+        // Comprobamos que haya un token
+        if (!token) {
+          console.error('No se encontró el token');
+          return;
+        }
+
+        // Configuración de los headers con el token
+        const config = {
+          headers: {
+            Authorization: `Bearer ${token}`, // Incluimos el token en el encabezado
+          },
+        };
+
+        // Hacemos la llamada POST solo con groupId, recommendationId y rating
+        const response = await axios.post('http://localhost:3000/api/groups/votes', {
+          groupId: this.groupId,               // ID del grupo
+          recommendationId: recommendation.id,  // ID de la recomendación
+          rating: recommendation.rating,        // La calificación elegida por el usuario
+        }, config); // Incluimos la configuración de los headers con el token
+
+        console.log('Calificación actualizada correctamente', response.data);
+        // Aquí podrías actualizar la calificación promedio localmente si es necesario
       } catch (error) {
         console.error('Error al actualizar la calificación:', error);
       }
@@ -325,5 +363,17 @@ export default {
 .no-recommendations {
   font-size: 1rem;
   color: #999;
+}
+.votes-section {
+  margin-top: 15px;
+}
+
+.votes-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.votes-section li {
+  font-weight: bold;
 }
 </style>

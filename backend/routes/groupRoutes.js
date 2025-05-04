@@ -3,7 +3,7 @@ const { createGroup } = require('../controllers/groupController'); // Importamos
 const { Group, GroupMembers, User } = require('../models');
 const { UserPreferences } = require('../models');
 const { Recommendation } = require('../models');  // Ajusta la ruta según tu estructura
-
+const { Vote } = require('../models');  // Ajusta la ruta según tu estructura
 const authenticate = require('../middleware/authenticate');
 const router = express.Router();
 const { getGroupData } = require('../controllers/groupController');
@@ -399,5 +399,116 @@ router.get('/recommendations', async (req, res) => {
     res.status(500).json({ message: 'Error al obtener recomendaciones', error: error.message });
   }
 });
+
+// Endpoint para votar en una recomendación de un grupo
+
+// POST /votes - Crear un nuevo voto
+router.post('/votes',authenticate, async (req, res) => {
+  const { groupId, recommendationId, rating } = req.body;
+  const userId = req.user.id;   // Asumiendo que el ID del usuario está en el token (verifica esto)
+
+  // Verificar que se hayan proporcionado todos los datos necesarios
+  if (!groupId || !recommendationId || !rating) {
+    return res.status(400).json({ error: 'Faltan datos necesarios (groupId, recommendationId, rating)' });
+  }
+
+  try {
+    // Crear un nuevo voto en la base de datos
+    const newVote = await Vote.create({
+      recommendationId,
+      userId,
+      rating,
+    });
+
+    // Obtener las recomendaciones para el grupo y calcular la nueva calificación promedio
+    const recommendation = await Recommendation.findByPk(recommendationId);
+    
+    if (!recommendation) {
+      return res.status(404).json({ error: 'Recomendación no encontrada' });
+    }
+
+    // Obtener todos los votos de esa recomendación
+    const votes = await Vote.findAll({
+      where: { recommendationId },
+      include: [{ model: User, attributes: ['name'] }],
+    });
+
+    const totalVotes = votes.length;
+    const averageRating = totalVotes > 0
+      ? votes.reduce((sum, vote) => sum + vote.rating, 0) / totalVotes
+      : 0;
+
+    // Actualizar la recomendación con la nueva calificación promedio
+    recommendation.averageRating = averageRating.toFixed(2);
+    await recommendation.save();
+
+    // Devolver la respuesta con el nuevo voto y la recomendación actualizada
+    res.json({
+      message: 'Voto registrado correctamente',
+      vote: newVote,
+      recommendation: {
+        id: recommendation.id,
+        destination: recommendation.destination,
+        averageRating: recommendation.averageRating,
+        votesCount: totalVotes,
+      },
+    });
+  } catch (error) {
+    console.error('Error al registrar el voto:', error);
+    res.status(500).json({ error: 'Error interno', message: error.message });
+  }
+});
+
+
+
+// GET /api/groups/votes
+router.get('/votes', async (req, res) => {
+  const { groupId } = req.query; // Usamos groupId de los parámetros de la URL
+  console.log('groupId recibido:', groupId); // Verifica que groupId esté llegando correctamente
+  if (!groupId) {
+    return res.status(400).json({ error: 'groupId es requerido' });
+  }
+
+  try {
+    // Obtener las recomendaciones para ese grupo, junto con los votos de los usuarios
+    const group = await Group.findByPk(groupId, {
+      include: {
+        model: Recommendation,
+        include: [{
+          model: Vote,
+          include: [User]
+        }]
+      }
+    });
+
+    if (!group) {
+      return res.status(404).json({ error: 'Grupo no encontrado' });
+    }
+
+    // Procesar las recomendaciones y votos
+    const recommendations = group.Recommendations.map(rec => {
+      const votes = rec.Votes.map(vote => ({
+        username: vote.User.name,
+        rating: vote.rating
+      }));
+
+      const averageRating = rec.Votes.reduce((sum, vote) => sum + vote.rating, 0) / rec.Votes.length;
+
+      return {
+        ...rec.toJSON(),
+        votes,
+        averageRating,
+        votesCount: rec.Votes.length,
+      };
+    });
+
+    return res.json(recommendations);
+  } catch (error) {
+    console.error('Error al obtener las recomendaciones:', error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+
 
 module.exports = router;

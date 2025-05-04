@@ -18,11 +18,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true
     },
-    startDate: {  // Nuevo campo para la fecha de inicio
+    startDate: {
       type: DataTypes.DATE,
       allowNull: false,
     },
-    endDate: {    // Nuevo campo para la fecha de fin
+    endDate: {
       type: DataTypes.DATE,
       allowNull: false,
     },
@@ -39,6 +39,9 @@ module.exports = (sequelize, DataTypes) => {
       as: 'UserGroups'
     });
     Group.hasMany(models.GroupMembers, { foreignKey: 'groupId' });
+
+    // Relación con Recommendation
+    Group.hasMany(models.Recommendation, { foreignKey: 'groupId' });  // Asegúrate de que esté correctamente configurada
   };
 
   return Group;

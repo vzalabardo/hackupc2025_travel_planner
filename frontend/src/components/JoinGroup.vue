@@ -54,7 +54,7 @@ const joinGroup = async () => {
 
     // Redirigir al usuario a la página del grupo o página principal después de unirse
     setTimeout(() => {
-      router.push(`/group/${groupCode.value}`); // Redirige al usuario a la página del grupo con el código
+      router.push(`Home`); // Redirige al usuario a la página del grupo con el código
     }, 1500); // Se espera un segundo para mostrar el mensaje de éxito antes de redirigir
 
   } catch (error) {

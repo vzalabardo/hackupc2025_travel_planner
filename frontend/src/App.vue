@@ -6,7 +6,7 @@
         Travel Planner
       </div>
       <div class="logout" @click="logout">
-        <i class="fas fa-sign-out-alt"></i> <!-- Icono de log out (Font Awesome) -->
+        Logout <!-- Texto en lugar del icono de logout -->
       </div>
     </header>
 
@@ -25,7 +25,8 @@ export default {
     logout() {
       // Lógica para cerrar sesión
       // Esto puede ser eliminando el token de autenticación o redirigiendo a un login, dependiendo de tu flujo
-      localStorage.removeItem('authToken'); // Ejemplo si usas localStorage
+      console.log('Cerrando sesión...');
+      localStorage.removeItem('token'); // Ejemplo si usas localStorage
       this.$router.push('/login'); // Redirige al login después de cerrar sesión
     }
   }
@@ -56,14 +57,11 @@ export default {
   flex-grow: 1;
 }
 
-/* Estilo para el icono de logout */
+/* Estilo para el texto de logout */
 .logout {
   cursor: pointer;
   font-size: 1.2rem;
-}
-
-.logout i {
-  margin-right: 10px;
+  font-weight: bold;
 }
 
 /* Espacio para la vista de contenido */

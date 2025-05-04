@@ -218,19 +218,19 @@ router.get('/preferences', async (req, res) => {
 // Función para hacer la consulta a GPT-3
 // Función para hacer la consulta a GPT-3
 const { createApi } = require('unsplash-js');
-
+require('dotenv').config(); 
 
 // Función para hacer la consulta a GPT-4 y generar las recomendaciones
 async function getRecommendationsFromGPT(preferences) {
-  const openAI_API_KEY = "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";
-  
+  const openAI_API_KEY = process.env.OPENAI_API_KEY;
+
   const client = new OpenAI({
     apiKey: openAI_API_KEY
   });
 
   try {
     const prompt = `
-      Basado en las siguientes preferencias del grupo, por favor genera 3 destinos recomendados para un viaje en avión, añade emoticonos en tus respuesta.
+      Basado en las siguientes preferencias del grupo, por favor genera 5 destinos recomendados para un viaje en avión, añade emoticonos en tus respuesta.
       Para cada destino y para cada origen de los miembros del grupo, también incluye un estimado aproximado del precio de un vuelo de ida y vuelta. Teniendo en cuenta las fechas indicadas.
 
       Preferencias del grupo: ${JSON.stringify(preferences)}
